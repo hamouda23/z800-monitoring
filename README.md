@@ -1,33 +1,101 @@
 # Supervision HP Z800 avec Prometheus + Grafana
 
-Guide complet d'installation et de configuration de Prometheus et Grafana pour superviser une workstation HP Z800 sous Linux Server.
+Guide complet d'installation et de configuration de Prometheus et Grafana pour superviser une workstation HP Z800 sous Ubuntu Server 22.04, accessible depuis Windows 11 via SSH.
 
 ## Table des matières
-1. [Prérequis](#prérequis)
-2. [Installation de Prometheus](#installation-de-prometheus)
-3. [Installation de Node Exporter](#installation-de-node-exporter)
-4. [Installation de Grafana](#installation-de-grafana)
-5. [Configuration](#configuration)
-6. [Création des tableaux de bord](#création-des-tableaux-de-bord)
-7. [Sécurisation](#sécurisation)
-8. [Dépannage](#dépannage)
+1. [Architecture](#architecture)
+2. [Prérequis](#prérequis)
+3. [Connexion SSH depuis Windows](#connexion-ssh-depuis-windows)
+4. [Installation de Prometheus](#installation-de-prometheus)
+5. [Installation de Node Exporter](#installation-de-node-exporter)
+6. [Installation de Grafana](#installation-de-grafana)
+7. [Configuration](#configuration)
+8. [Accès depuis Windows](#accès-depuis-windows)
+9. [Création des tableaux de bord](#création-des-tableaux-de-bord)
+10. [Sécurisation](#sécurisation)
+11. [Dépannage](#dépannage)
+
+---
+
+## Architecture
+
+```
+┌─────────────────────┐         SSH          ┌──────────────────────────┐
+│  Laptop Windows 11  │ ───────────────────> │   HP Z800 Workstation    │
+│                     │                       │   Ubuntu Server 22.04    │
+│  - Navigateur Web   │ <─ HTTP (3000,9090)  │                          │
+│  - Terminal SSH     │                       │  - Prometheus (9090)     │
+│    (PowerShell/     │                       │  - Grafana (3000)        │
+│     PuTTY)          │                       │  - Node Exporter (9100)  │
+└─────────────────────┘                       └──────────────────────────┘
+```
 
 ---
 
 ## Prérequis
 
-- HP Z800 avec Linux Server installé (Ubuntu/Debian/CentOS/RHEL)
-- Accès root ou sudo
+### Sur le Z800 (Ubuntu Server 22.04)
+- Ubuntu Server 22.04 LTS installé
+- Accès root ou utilisateur avec sudo
 - Connexion internet
+- SSH activé
+- Adresse IP fixe ou connue (exemple: 192.168.1.100)
 - Ports disponibles : 9090 (Prometheus), 3000 (Grafana), 9100 (Node Exporter)
 
-### Mise à jour du système
-```bash
-# Debian/Ubuntu
-sudo apt update && sudo apt upgrade -y
+### Sur votre Laptop Windows 11
+- Windows 11 avec PowerShell ou Terminal Windows
+- Ou PuTTY installé (optionnel)
+- Navigateur web (Chrome, Firefox, Edge)
+- Connexion au même réseau que le Z800
 
-# CentOS/RHEL
-sudo yum update -y
+### Vérifier l'IP du Z800
+Depuis le Z800, notez l'adresse IP :
+```bash
+ip addr show | grep inet
+# ou
+hostname -I
+```
+
+### Mise à jour du système
+Connectez-vous au Z800 et exécutez :
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+---
+
+## Connexion SSH depuis Windows
+
+### Option 1 : Utiliser PowerShell / Windows Terminal (Recommandé)
+
+Windows 11 inclut nativement le client SSH.
+
+```powershell
+# Se connecter au Z800
+ssh utilisateur@IP_DU_Z800
+
+# Exemple:
+ssh votre_user@192.168.1.100
+```
+
+À la première connexion, acceptez l'empreinte du serveur en tapant `yes`.
+
+### Option 2 : Utiliser PuTTY
+
+1. Téléchargez PuTTY : https://www.putty.org/
+2. Lancez PuTTY
+3. Host Name : `IP_DU_Z800`
+4. Port : `22`
+5. Cliquez sur **Open**
+
+### Copier des fichiers depuis Windows (optionnel)
+
+```powershell
+# Copier un fichier vers le Z800
+scp fichier.txt utilisateur@IP_DU_Z800:/home/utilisateur/
+
+# Copier depuis le Z800 vers Windows
+scp utilisateur@IP_DU_Z800:/chemin/fichier.txt C:\Users\VotreNom\Downloads\
 ```
 
 ---
@@ -118,7 +186,11 @@ sudo systemctl status prometheus
 ```
 
 ### 7. Vérifier l'accès
-Ouvrez un navigateur et accédez à : `http://IP_Z800:9090`
+Depuis votre **navigateur Windows**, accédez à : `http://IP_DU_Z800:9090`
+
+Exemple : `http://192.168.1.100:9090`
+
+Si vous ne pouvez pas accéder, vérifiez le pare-feu (voir section Configuration).
 
 ---
 
@@ -229,11 +301,57 @@ sudo systemctl status grafana-server
 ```
 
 ### Accéder à Grafana
-Ouvrez : `http://IP_Z800:3000`
+Depuis votre **navigateur Windows**, ouvrez : `http://IP_DU_Z800:3000`
+
+Exemple : `http://192.168.1.100:3000`
+
 - **Login par défaut** : admin
 - **Mot de passe par défaut** : admin
 
 (Vous serez invité à changer le mot de passe)
+
+---
+
+## Accès depuis Windows
+
+### Méthode 1 : Accès direct via navigateur
+
+Si vous êtes sur le même réseau local que le Z800 :
+
+1. **Grafana** : `http://IP_DU_Z800:3000`
+2. **Prometheus** : `http://IP_DU_Z800:9090`
+
+### Méthode 2 : Tunnel SSH (si accès distant ou pare-feu)
+
+Si vous ne pouvez pas accéder directement, créez un tunnel SSH depuis Windows :
+
+```powershell
+# Tunnel pour Grafana
+ssh -L 3000:localhost:3000 utilisateur@IP_DU_Z800
+
+# Dans un autre terminal, tunnel pour Prometheus
+ssh -L 9090:localhost:9090 utilisateur@IP_DU_Z800
+```
+
+Ensuite accédez via :
+- Grafana : `http://localhost:3000`
+- Prometheus : `http://localhost:9090`
+
+### Méthode 3 : Créer des raccourcis Windows
+
+Créez des fichiers `.url` pour accès rapide :
+
+**Grafana.url** :
+```ini
+[InternetShortcut]
+URL=http://IP_DU_Z800:3000
+```
+
+**Prometheus.url** :
+```ini
+[InternetShortcut]
+URL=http://IP_DU_Z800:9090
+```
 
 ---
 
@@ -250,19 +368,38 @@ Ouvrez : `http://IP_Z800:3000`
    - Laissez les autres paramètres par défaut
 6. Cliquez sur **Save & Test**
 
-### 2. Configurer le pare-feu (si actif)
+### 2. Configurer le pare-feu Ubuntu (sur le Z800)
+
+**IMPORTANT** : Pour accéder depuis Windows, vous devez ouvrir les ports sur Ubuntu.
 
 ```bash
-# UFW (Ubuntu/Debian)
+# Vérifier si UFW est actif
+sudo ufw status
+
+# Si UFW est actif, ouvrir les ports nécessaires
+sudo ufw allow 22/tcp comment 'SSH'
 sudo ufw allow 9090/tcp comment 'Prometheus'
 sudo ufw allow 3000/tcp comment 'Grafana'
 sudo ufw allow 9100/tcp comment 'Node Exporter'
 
-# Firewalld (CentOS/RHEL)
-sudo firewall-cmd --permanent --add-port=9090/tcp
-sudo firewall-cmd --permanent --add-port=3000/tcp
-sudo firewall-cmd --permanent --add-port=9100/tcp
-sudo firewall-cmd --reload
+# Si UFW n'est pas actif, l'activer
+sudo ufw enable
+
+# Vérifier les règles
+sudo ufw status numbered
+```
+
+### 3. Tester la connectivité depuis Windows
+
+Depuis PowerShell sur Windows :
+
+```powershell
+# Tester si le port est ouvert
+Test-NetConnection -ComputerName IP_DU_Z800 -Port 3000
+Test-NetConnection -ComputerName IP_DU_Z800 -Port 9090
+
+# Ou avec telnet (si installé)
+telnet IP_DU_Z800 3000
 ```
 
 ---
@@ -366,6 +503,51 @@ sudo iptables -A INPUT -p tcp --dport 9090 -j DROP
 
 ## Dépannage
 
+### Problèmes de connexion depuis Windows
+
+**Impossible d'accéder à Grafana/Prometheus depuis Windows :**
+
+1. Vérifier que les services tournent sur le Z800 :
+```bash
+sudo systemctl status prometheus
+sudo systemctl status grafana-server
+```
+
+2. Vérifier que le Z800 est accessible :
+```powershell
+# Depuis Windows PowerShell
+ping IP_DU_Z800
+```
+
+3. Vérifier le pare-feu Ubuntu :
+```bash
+sudo ufw status verbose
+```
+
+4. Vérifier que les ports écoutent :
+```bash
+sudo ss -tulpn | grep -E '3000|9090|9100'
+```
+
+5. Tester localement sur le Z800 :
+```bash
+curl http://localhost:3000
+curl http://localhost:9090
+```
+
+Si localhost fonctionne mais pas depuis Windows, c'est un problème de pare-feu ou de réseau.
+
+### Créer un tunnel SSH depuis Windows si le pare-feu bloque
+
+```powershell
+# Gardez cette fenêtre PowerShell ouverte
+ssh -L 3000:localhost:3000 -L 9090:localhost:9090 utilisateur@IP_DU_Z800
+
+# Puis accédez via votre navigateur à:
+# http://localhost:3000 (Grafana)
+# http://localhost:9090 (Prometheus)
+```
+
 ### Vérifier l'état des services
 ```bash
 sudo systemctl status prometheus
@@ -401,7 +583,33 @@ curl http://localhost:9090/api/v1/targets
 
 **Pas de données dans Grafana :**
 - Vérifier que Node Exporter est en cours d'exécution
-- Vérifier les targets dans Prometheus : `http://IP_Z800:9090/targets`
+- Vérifier les targets dans Prometheus : `http://IP_DU_Z800:9090/targets`
+- S'assurer que la source de données Prometheus est bien configurée dans Grafana
+
+### Commandes utiles depuis Windows
+
+```powershell
+# Se connecter en SSH
+ssh utilisateur@IP_DU_Z800
+
+# Créer un tunnel SSH (une seule commande pour tous les services)
+ssh -L 3000:localhost:3000 -L 9090:localhost:9090 -L 9100:localhost:9100 utilisateur@IP_DU_Z800
+
+# Copier les logs vers Windows pour analyse
+scp utilisateur@IP_DU_Z800:/var/log/grafana/grafana.log C:\Users\VotreNom\Downloads\
+```
+
+### Redémarrer tous les services
+
+```bash
+# Sur le Z800 via SSH
+sudo systemctl restart prometheus
+sudo systemctl restart node_exporter
+sudo systemctl restart grafana-server
+
+# Vérifier les statuts
+sudo systemctl status prometheus node_exporter grafana-server
+```
 
 ---
 
@@ -451,6 +659,11 @@ sudo yum update grafana  # CentOS/RHEL
 
 ## Auteur
 
-Guide créé pour la supervision d'une HP Z800 workstation sous Linux Server.
+Guide créé pour la supervision d'une HP Z800 workstation sous Ubuntu Server 22.04, accessible depuis Windows 11.
+
+**Configuration :**
+- Workstation : HP Z800 + Ubuntu Server 22.04
+- Client : Windows 11
+- Connexion : SSH
 
 Date de création : Janvier 2026
