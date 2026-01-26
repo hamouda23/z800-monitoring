@@ -18,6 +18,18 @@ Ce projet fournit une solution complète de monitoring pour superviser :
 - ✅ **Dashboards Grafana** - Visualisation temps réel avec alertes
 
 ### Architecture
+```
+┌─────────────────────┐         SSH          ┌──────────────────────────┐
+│  Laptop Windows 11  │ ───────────────────> │   HP Z800 Workstation    │
+│                     │                       │   Ubuntu Server 22.04    │
+│  - Navigateur Web   │ <─ HTTP (3000,9090)  │                          │
+│  - Terminal SSH     │                       │  - Prometheus (9090)     │
+│    (PowerShell/     │                       │  - Grafana (3000)        │
+│     PuTTY)          │                       │  - Node Exporter (9100)  │
+└─────────────────────┘                       └──────────────────────────┘
+```
+
+---
 
 ```
 Windows 11 Laptop  ──SSH/HTTP──>  HP Z800 (Ubuntu 22.04)
@@ -354,17 +366,6 @@ MIT License - Vous êtes libre d'utiliser, modifier et distribuer ce projet.
 
 **⭐ Si ce projet vous a été utile, n'hésitez pas à lui donner une étoile !**
 
-```
-┌─────────────────────┐         SSH          ┌──────────────────────────┐
-│  Laptop Windows 11  │ ───────────────────> │   HP Z800 Workstation    │
-│                     │                       │   Ubuntu Server 22.04    │
-│  - Navigateur Web   │ <─ HTTP (3000,9090)  │                          │
-│  - Terminal SSH     │                       │  - Prometheus (9090)     │
-│    (PowerShell/     │                       │  - Grafana (3000)        │
-│     PuTTY)          │                       │  - Node Exporter (9100)  │
-└─────────────────────┘                       └──────────────────────────┘
-```
 
----
 
 
