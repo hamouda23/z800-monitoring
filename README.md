@@ -96,7 +96,7 @@ sudo systemctl status prometheus grafana-server node_exporter simple-gpu-exporte
 ### Pour les administrateurs
 
 - **[Configuration](docs/CONFIGURATION.md)** - Fichiers de config et architecture
-- **[Scripts](scripts/)** - Scripts d'installation, sauvegarde, monitoring
+
 
 ### Concepts clés
 
