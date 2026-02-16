@@ -285,6 +285,7 @@ sudo systemctl restart simple-gpu-exporter
 
 ### Dashboard Système
 ![Node Exporter Dashboard](images/node-exporter-dashboard.png)
+**[[Node Exporter Dashboard](images/grafana-cpu.png)** - Node Exporter Dashboard
 
 ### Dashboard GPU
 ![GPU Dashboard](images/gpu-dashboard.png)
