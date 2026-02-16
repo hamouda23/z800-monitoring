@@ -76,15 +76,6 @@ sudo systemctl status prometheus grafana-server node_exporter simple-gpu-exporte
 
 ### Pour les utilisateurs
 
-- **[Guide d'installation](docs/INSTALLATION.md)** - Installation pas à pas détaillée
-- **[Guide d'utilisation](docs/USAGE.md)** - Comment utiliser Prometheus et Grafana
-- **[PromQL Cheatsheet](docs/PROMQL_CHEATSHEET.md)** - Requêtes utiles pour interroger vos métriques
-
-### Pour les administrateurs
-
-- **[Configuration](docs/CONFIGURATION.md)** - Fichiers de config et architecture
-- **[Scripts](scripts/)** - Scripts d'installation, sauvegarde, monitoring
-
 ### Concepts clés
 
 #### Qu'est-ce que Prometheus ?
