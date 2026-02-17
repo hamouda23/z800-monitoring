@@ -693,6 +693,93 @@ sudo journalctl -u prometheus -n 50
 ```
 
 ---
+## ⚠️ Problème connu : Clonage de disque
+
+### Symptôme
+Après un clonage de disque, snapshot ou déplacement :
+- Prometheus démarre mais ne retourne aucune donnée
+- Les targets sont UP
+- Grafana affiche des dashboards vides
+- `curl 'http://localhost:9090/api/v1/query?query=up'` retourne `"result":[]`
+
+### Cause
+La base de données TSDB de Prometheus est corrompue après le clonage. Les fichiers mmap ne supportent pas d'être copiés pendant que Prometheus tourne ou changent d'UUID de disque.
+
+### Solution rapide (perte d'historique)
+```bash
+# Arrêter Prometheus
+sudo systemctl stop prometheus
+
+# Supprimer les données corrompues
+sudo rm -rf /mnt/data/prometheus/data/*
+
+# Recréer la structure
+sudo mkdir -p /mnt/data/prometheus/data
+sudo chown -R prometheus:prometheus /mnt/data/prometheus
+
+# Redémarrer
+sudo systemctl start prometheus
+
+# Attendre 30 secondes
+sleep 30
+
+# Vérifier
+curl 'http://localhost:9090/api/v1/query?query=up'
+```
+
+⚠️ **Note** : Vous perdez tout l'historique (données des 15 derniers jours)
+
+### Solution avec sauvegarde de l'historique
+
+Si vous voulez GARDER l'historique avant un clonage :
+```bash
+# AVANT le clonage/snapshot
+
+# 1. Arrêter Prometheus proprement
+sudo systemctl stop prometheus
+
+# 2. Créer un snapshot Prometheus (optionnel)
+curl -X POST http://localhost:9090/api/v1/admin/tsdb/snapshot
+
+# 3. Faire votre clonage/snapshot du disque
+
+# 4. APRÈS le clonage, sur le nouveau système :
+
+# Arrêter Prometheus
+sudo systemctl stop prometheus
+
+# Supprimer les données
+sudo rm -rf /mnt/data/prometheus/data/*
+
+# Recréer
+sudo mkdir -p /mnt/data/prometheus/data
+sudo chown -R prometheus:prometheus /mnt/data/prometheus
+
+# Redémarrer
+sudo systemctl start prometheus
+```
+
+### Bonnes pratiques
+
+✅ **TOUJOURS arrêter Prometheus avant un clonage** :
+```bash
+sudo systemctl stop prometheus
+```
+
+✅ **Sauvegarder la configuration** (pas les données TSDB) :
+```bash
+sudo tar -czf prometheus-config-$(date +%Y%m%d).tar.gz \
+  /etc/prometheus/ \
+  /etc/systemd/system/prometheus.service
+```
+
+✅ **Accepter la perte d'historique** : Les données TSDB ne sont pas faites pour être migrées. Après un clonage, recommencez la collecte.
+
+✅ **Exporter les dashboards Grafana** (ils survivent au clonage) :
+- Settings → JSON Model → Copier
+- Sauvegarder dans le repository Git
+
+❌ **Ne PAS sauvegarder** `/mnt/data/prometheus/data/` - ces fichiers ne sont pas portables
 
 ## Historique des modifications
 
