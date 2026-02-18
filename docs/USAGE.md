@@ -442,7 +442,20 @@ sudo systemctl restart prometheus node_exporter grafana-server simple-gpu-export
 ```bash
 sudo ss -tulpn | grep -E '9090|9100|9835|3000'
 ```
+### Procédure après clonage de disque / snapshot
+```bash
+# Lancer le script de reset
+sudo prometheus-reset.sh
 
+# Ou manuellement :
+sudo systemctl stop prometheus
+sudo rm -rf /mnt/deep-learning/prometheus/data/*
+sudo mkdir -p /mnt/deep-learning/prometheus/data
+sudo chown -R prometheus:prometheus /mnt/deep-learning/prometheus
+sudo systemctl start prometheus
+sleep 30
+curl 'http://localhost:9090/api/v1/query?query=up'
+```
 Devrait afficher :
 - Port 9090 - Prometheus
 - Port 9100 - Node Exporter
